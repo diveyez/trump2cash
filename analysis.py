@@ -220,7 +220,7 @@ class Analysis:
                 # Add the company to the list unless we already have the same
                 # ticker.
                 tickers = [existing['ticker'] for existing in companies]
-                if not company['ticker'] in tickers:
+                if company['ticker'] not in tickers:
                     companies.append(company)
                 else:
                     self.logs.warn(

@@ -116,15 +116,15 @@ if __name__ == '__main__':
 
     events = []
     for tweet in tqdm(tweets):
-        event = {}
-
         timestamp_str = tweet['created_at']
         timestamp = trading.utc_to_market_time(datetime.strptime(
             timestamp_str, '%a %b %d %H:%M:%S +0000 %Y'))
         text = twitter.get_tweet_text(tweet)
-        event['timestamp'] = timestamp
-        event['text'] = text
-        event['link'] = twitter.get_tweet_link(tweet)
+        event = {
+            'timestamp': timestamp,
+            'text': text,
+            'link': twitter.get_tweet_link(tweet),
+        }
 
         # Extract the companies.
         companies = analysis.find_companies(tweet)
@@ -136,10 +136,9 @@ if __name__ == '__main__':
             market_status = get_market_status(timestamp)
             strategy = trading.get_strategy(company, market_status)
 
-            # What was the price at tweet and at EOD?
-            price = trading.get_historical_prices(
-                company['ticker'], timestamp)
-            if price:
+            if price := trading.get_historical_prices(
+                company['ticker'], timestamp
+            ):
                 strategy['price_at'] = price['at']
                 strategy['price_eod'] = price['eod']
             else:
@@ -174,9 +173,7 @@ if __name__ == '__main__':
           'market performance.')
 
     for event in events:
-        strategies = event['strategies']
-
-        if strategies:
+        if strategies := event['strategies']:
             timestamp = format_timestamp(event['timestamp'], weekday=True)
             print()
             print('##### [%s](%s)' % (timestamp, event['link']))
@@ -245,9 +242,8 @@ if __name__ == '__main__':
         strategies = event['strategies']
 
         # Figure out what to spend on each trade.
-        num_actionable_strategies = sum(
-            [1 for strategy in strategies if should_trade(
-                strategy, date, previous_trade_date)])
+        num_actionable_strategies = sum(bool(should_trade(
+                strategy, date, previous_trade_date)) for strategy in strategies)
         budget = trading.get_budget(value, num_actionable_strategies)
 
         trade = False
@@ -258,10 +254,7 @@ if __name__ == '__main__':
             price_eod = strategy['price_eod']
 
             if trade:
-                # Use the price at tweet to determine stock quantity.
-                quantity = int(budget // price_at)
-
-                if quantity:
+                if quantity := int(budget // price_at):
                     # Pay the fees for both trades.
                     value -= 2 * TRADE_FEE
 
@@ -283,10 +276,7 @@ if __name__ == '__main__':
 
             if date != start_date:
                 days = (date - start_date).days
-                if days > 0:
-                    annualized_ratio = pow(total_ratio, 365.0 / days)
-                else:
-                    annualized_ratio = 1
+                annualized_ratio = pow(total_ratio, 365.0 / days) if days > 0 else 1
                 annualized_return = format_ratio(annualized_ratio)
             else:
                 annualized_return = '-'

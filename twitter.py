@@ -153,10 +153,7 @@ class Twitter:
             lines_size = MAX_TWEET_SIZE - len(link) - 2
             lines_str = '%s\u2026' % lines_str[:lines_size]
 
-        # Combine the lines with the link.
-        text = '%s\n%s' % (lines_str, link)
-
-        return text
+        return '%s\n%s' % (lines_str, link)
 
     def get_sentiment_emoji(self, sentiment):
         """Returns the emoji matching the sentiment."""
@@ -209,9 +206,7 @@ class Twitter:
                 self.logs.warn('Skipping tweet: %s' % status)
                 continue
 
-            # Get the tweet details and add it to the list.
-            quoted_tweet = self.get_tweet(quoted_tweet_id)
-            if quoted_tweet:
+            if quoted_tweet := self.get_tweet(quoted_tweet_id):
                 tweets.append(quoted_tweet)
 
         self.logs.debug('Got tweets: %s' % tweets)
@@ -252,8 +247,7 @@ class Twitter:
             self.logs.error('Malformed tweet for link: %s' % tweet)
             return None
 
-        link = TWEET_URL % (screen_name, id_str)
-        return link
+        return TWEET_URL % (screen_name, id_str)
 
 
 class TwitterListener(StreamListener):

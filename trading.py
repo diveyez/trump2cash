@@ -126,8 +126,7 @@ class Trading:
         ticker = company['ticker']
         sentiment = company['sentiment']
 
-        strategy = {}
-        strategy['name'] = company['name']
+        strategy = {'name': company['name']}
         if 'root' in company:
             strategy['root'] = company['root']
         strategy['sentiment'] = company['sentiment']
@@ -142,7 +141,7 @@ class Trading:
 
         # TODO: Figure out some strategy for the markets closed case.
         # Don't trade unless the markets are open or are about to open.
-        if market_status != 'open' and market_status != 'pre':
+        if market_status not in ['open', 'pre']:
             strategy['action'] = 'hold'
             strategy['reason'] = 'market closed'
             return strategy
@@ -157,11 +156,11 @@ class Trading:
         if sentiment > 0:
             strategy['action'] = 'bull'
             strategy['reason'] = 'positive sentiment'
-            return strategy
         else:  # sentiment < 0
             strategy['action'] = 'bear'
             strategy['reason'] = 'negative sentiment'
-            return strategy
+
+        return strategy
 
     def get_budget(self, balance, num_strategies):
         """Calculates the budget per company based on the available balance."""
@@ -220,7 +219,7 @@ class Trading:
                 return None
             quote_at = previous_quotes[-1]
             quote_eod = last_quote
-        elif timestamp >= first_quote_time and timestamp <= last_quote_time:
+        elif timestamp <= last_quote_time:
             self.logs.debug('Using closest quote.')
             # Walk through the quotes until we stepped over the timestamp.
             previous_quote = first_quote
@@ -329,17 +328,13 @@ class Trading:
         """Converts a UTC timestamp to local market time."""
 
         utc_time = utc.localize(timestamp)
-        market_time = utc_time.astimezone(MARKET_TIMEZONE)
-
-        return market_time
+        return utc_time.astimezone(MARKET_TIMEZONE)
 
     def market_time_to_utc(self, timestamp):
         """Converts a timestamp in local market time to UTC."""
 
         market_time = MARKET_TIMEZONE.localize(timestamp)
-        utc_time = market_time.astimezone(utc)
-
-        return utc_time
+        return market_time.astimezone(utc)
 
     def as_market_time(self, year, month, day, hour=0, minute=0, second=0):
         """Creates a timestamp in market time."""
@@ -522,9 +517,8 @@ class Trading:
 
         if last > 0:
             return last
-        else:
-            self.logs.error('Bad quote for: %s' % ticker)
-            return None
+        self.logs.error('Bad quote for: %s' % ticker)
+        return None
 
     def get_order_url(self):
         """Gets the TradeKing URL for placing orders."""
